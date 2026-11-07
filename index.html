@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Our Little Universe</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Be+Vietnam+Pro:wght@300;400&family=Dancing+Script:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#050308;--red:#FF4568;--pink:#FF8FA8;--lp:#FFC6D2;--w:#FFF5F7;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--w);font-family:'Be Vietnam Pro',system-ui,sans-serif;font-weight:300;overflow:hidden;overscroll-behavior:none}
+canvas#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+canvas#cv:active{cursor:grabbing}
+button{font:inherit;color:var(--w);background:none;border:1px solid rgba(255,198,210,.35);border-radius:999px;padding:.55em 1.1em;cursor:pointer;transition:background .25s,border-color .25s}
+button:hover,button:focus-visible{background:rgba(255,69,104,.22);border-color:var(--pink);outline:none}
+.ser{font-family:'Cormorant Garamond',serif;font-weight:500}.hand{font-family:'Dancing Script',cursive}
+#hud{position:fixed;inset:0;pointer-events:none}
+#hud>*{pointer-events:auto;position:absolute}
+#count{top:16px;left:18px;font-family:'Cormorant Garamond',serif;font-size:1.05rem;color:var(--lp);line-height:1.35}
+#count b{font-size:1.6rem;font-weight:500;color:var(--w)}
+#music{top:14px;right:14px;display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--lp);max-width:55vw}
+#music input{width:70px}
+#ctl{left:14px;bottom:14px;display:flex;flex-direction:column;gap:8px;font-size:.78rem;color:var(--lp)}
+#ctl label{display:flex;align-items:center;gap:8px}
+#ctl input{width:90px}
+#nav{bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:min(92vw,520px)}
+#nav button:last-child{border-color:var(--red)}
+input[type=range]{accent-color:var(--red)}
+#intro,#sur,#lt,#lb{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;transition:opacity 1.2s}
+#intro{background:radial-gradient(circle at 50% 45%,#1a0610,var(--bg) 70%);z-index:20}
+#intro h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:clamp(2.4rem,9vw,5rem);margin:.2em 0;letter-spacing:.02em}
+#intro p{font-family:'Dancing Script',cursive;font-size:clamp(1.3rem,4vw,2rem);color:var(--pink);margin:0 0 1.6em}
+.hide{opacity:0;pointer-events:none!important}
+#sur{background:rgba(5,3,8,.9);z-index:15;opacity:0;pointer-events:none}
+#sur.on{opacity:1;pointer-events:auto}
+#sur p{font-family:'Dancing Script',cursive;font-size:clamp(1.8rem,6vw,3.4rem);color:var(--lp);max-width:16em;margin:0 0 1em;opacity:0;transform:scale(.9);transition:opacity 2s,transform 2s}
+#sur.show p{opacity:1;transform:none}
+#lt{background:rgba(5,3,8,.82);z-index:16;opacity:0;pointer-events:none}
+#lt.on{opacity:1;pointer-events:auto}
+.env{position:relative;width:min(80vw,340px);height:min(54vw,226px);background:#8a1f3d;border-radius:4px;cursor:pointer;box-shadow:0 20px 60px rgba(255,69,104,.25);transition:opacity .8s}
+.env .flap{position:absolute;top:0;left:0;width:100%;height:62%;background:#a3294a;clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:top;transition:transform .9s;z-index:3}
+.env.open .flap{transform:rotateX(180deg);z-index:0}
+.env i{position:absolute;inset:0;background:#b53a5c;clip-path:polygon(0 30%,50% 60%,100% 30%,100% 100%,0 100%);z-index:2}
+.env span{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);z-index:4;font-size:1.6rem;color:var(--lp);transition:opacity .4s}
+.env.open span{opacity:0}.env.gone{opacity:0;pointer-events:none}
+.hint{margin-top:18px;color:var(--lp);font-size:.85rem}
+.paper{position:absolute;width:min(92vw,540px);max-height:80vh;overflow:auto;background:#F6EBD9;color:#5a3a40;border-radius:3px;padding:34px 30px;text-align:left;box-shadow:0 30px 80px rgba(0,0,0,.6);display:none;font-family:'Dancing Script',cursive;font-size:1.5rem;line-height:1.55}
+.paper.show{display:block;animation:rise 1.3s cubic-bezier(.2,.8,.2,1)}
+@keyframes rise{from{transform:translateY(40vh) scale(.55);opacity:0}to{transform:none;opacity:1}}
+.paper h2{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:2rem;margin:0 0 .6em}
+.paper p{margin:0 0 .7em;opacity:0;transition:opacity 1.2s}.paper p.v{opacity:1}
+.paper .sg{text-align:right;margin-top:1em}.paper small{display:block;text-align:right;font-family:'Be Vietnam Pro',sans-serif;font-size:.75rem;opacity:.7}
+.x{position:absolute;top:14px;right:14px;z-index:30}
+#lb{background:rgba(5,3,8,.92);z-index:25;opacity:0;pointer-events:none;cursor:zoom-out}
+#lb.on{opacity:1;pointer-events:auto}
+#lb img{max-width:90vw;max-height:70vh;background:#FFF5F7;padding:12px 12px 12px;box-shadow:0 20px 70px rgba(255,69,104,.3)}
+#lb p{font-family:'Dancing Script',cursive;font-size:1.7rem;margin:.6em 0 0;color:var(--lp)}#lb small{color:var(--pink)}
+#fx{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:12}
+#fx span{position:absolute;color:var(--pink);animation:fl 4s ease-out forwards;text-shadow:0 0 10px var(--red)}
+@keyframes fl{from{transform:translateY(0) scale(.6);opacity:1}to{transform:translateY(-55vh) scale(1.3) translateX(var(--dx));opacity:0}}
+@media(max-width:600px){#ctl input{width:70px}#music input{display:none}}
+@media(prefers-reduced-motion:reduce){#fx span{animation-duration:.01s}}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="fx"></div>
+<div id="hud">
+  <div id="count"></div>
+  <div id="music"><button id="pl" aria-label="Phát nhạc">▶</button><span id="mt"></span><input id="vol" type="range" min="0" max="1" step=".05" value=".6" aria-label="Âm lượng"></div>
+  <div id="ctl">
+    <label><button id="rs">↺ Đặt lại</button><button id="au">Tự xoay: bật</button></label>
+    <label>Tốc độ <input id="sp" type="range" min="0" max="1.2" step=".05" value=".25"></label>
+    <label>Phóng to <input id="zm" type="range" min=".5" max="2.5" step=".05" value="1"></label>
+  </div>
+  <div id="nav"><button id="bl">Lá thư</button><button id="bx">Bung nở</button><button id="bs">Một điều bất ngờ dành cho em</button></div>
+</div>
+<div id="intro"><h1 id="it"></h1><p id="ip"></p><button id="go">Bước vào thế giới của chúng mình</button></div>
+<div id="sur"><p id="sm"></p><button id="sc">Quay về với vũ trụ</button></div>
+<div id="lt"><button class="x" id="lc">Đóng</button>
+  <div class="env" id="env"><div class="flap"></div><i></i><span>♥</span></div><div class="hint" id="lh">Chạm vào phong bì để mở</div>
+  <div class="paper" id="pp"></div></div>
+<div id="lb"><img id="li" alt=""><p id="lcap"></p><small id="ld"></small></div>
+<audio id="au1" preload="none"></audio>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ================== CẤU HÌNH — chỉ cần sửa ở đây ================== */
+const CONFIG={
+  title:"Our Little Universe", greeting:"anh yêu emmmm", names:["Anh","Em"],
+  start:"2026-07-29T00:00:00",
+  music:{src:"public/music/song.mp3",title:"Trang nhà ở đâu thế"} 
+}; 
+const MEMORIES=[
+  {file:"public/images/memories/01.jpg",caption:"Cái bánh đầu tiên",date:"28.05.2026"},
+  {file:"public/images/memories/02.jpg",caption:"Hoa chụp với hoa",date:"01.06.2026"},
+  {file:"public/images/memories/03.jpg",caption:"Ảnh đầu tiên",date:"04.06.2026"},
+  {file:"public/images/memories/04.jpg",caption:"Đáng iu của tớ",date:"29.06.2026"},
+  {file:"public/images/memories/05.jpg",caption:"Đạp xe với tớ",date:"03.07.2026"},
+  {file:"public/images/memories/06.jpg",caption:"Vợ tớ cho tớ call video",date:"03.07.2026"},
+  {file:"public/images/memories/07.jpg",caption:"Go for a ride with me",date:"03.07.2026"},
+  {file:"public/images/memories/08.jpg",caption:"vid này tớ siêu thích",date:"07.07.2026"},
+  {file:"public/images/memories/09.jpg",caption:"Việt tỏ tình Trang ạ",date:"07.07.2026"},
+  {file:"public/images/memories/10.jpg",caption:"tớ thích cậuuuu",date:"07.07.2026"},
+  {file:"public/images/memories/11.jpg",caption:"đồ cute yêu tôi",date:"10.07.2026"},
+  {file:"public/images/memories/12.jpg",caption:"tình đầu của tớ",date:"29.07.2026"},
+  {file:"public/images/memories/13.jpg",caption:"hứa yêu công chúa đến hết đời",date:"29.07.2026"},
+  {file:"public/images/memories/14.jpg",caption:"dubai on the ride",date:"30.08.2026"},
+  {file:"public/images/memories/15.jpg",caption:"người ấy ăn thịt tôi",date:"20.09.2026"},
+  {file:"public/images/memories/16.jpg",caption:"trung thu siêu đáng nhớ",date:"26.09.2026"},
+  {file:"public/images/memories/17.jpg",caption:"hối lộ xin lỗi công chúa của tớ",date:"03.10.2026"},
+  {file:"public/images/memories/18.jpg",caption:"bạch nguyệt quang của đời tôi",date:"05.11.2026"}  
+];
+const MESSAGES=[ // mỗi dòng chạy trên một vòng quỹ đạo
+  ["anh yêu emmmm","em là điều tuyệt vời nhất"],  
+  ["our little universe","forever with you"],
+  ["mãi bên nhau nhé","you are my favorite person"] 
+];
+const SURPRISE="Anh yêu em. Mãi bên nhau nhé.";   // thông điệp bất ngờ
+const LETTER={
+  title:"Gửi em,",
+  lines:[
+    "Cho tớ gửi lời chào đến bạn nữ xinh gái đang có một chút muộn phiền ạ. Hi vọng những dòng chữ ngây ngô này sẽ giúp cậu vui lên ạ. Đây là lần thứ hai tớ viết thư ạ, cái đồ bảo tôi giả tạo ạ-hơi buồn đấy nhé, nói thiệt đó. Mà thui tớ biết Trang trêu thui hì hì. Vậy là mình bên nhau được hơn 100 ngày rùi, tớ chả biết nói gì ngoài yêu cậu đâu đồ thơm ạ. Hy vọng trên con đường cậu sắp đi sẽ luôn thật bằng phẳng, mong cậu sẽ luôn làm được những gì cậu muốn ạ!!! Đôi lúc tớ biết tớ làm Trang giận, nhiều khi tớ không ở bên cạnh cậu khi cậu cần, cho tớ gửi một lời xin lỗi siêu to khổng lồ nhé đồ đáng yêu, mong iu hông bùn lâu và tha thứ cho tớ, tớ chỉ mún nói là tớ luôn yêu cậu ạ. Hy vọng chúng mình sẽ đồng hành thật thật lâu, đi qua đủ mọi mục tiêu lun, tớ sẽ cố gắng thật nhiều để cô gái yêu tớ sẽ có được tất cả ạ. Hiện tại tui viết dòng này trong lúc cô ấy giận tui, hi vọng đọc xong cô ấy sẽ bớt ghét tui hihi, hông là bùn lắm đó.",
+    "Nhớ ngày đầu tớ còn hỏi Trang còn bánh hông, công chúa rep tớ siêu cute lun, làm người ta mê lắm í, chả hiểu sao lúc ấy tớ lại thấy tớ là người đặc biệt-trên cương vị customer khà khà. Xong rồi đến lúc tập gym và đi bơi với cậu, thích lắm lun í, mỗi cái cô gái ấy lúc đầu hay ghost tui hì hì. Mãi tui mới rủ được nàng đi xem phim, ôi ngày ấy vui lắm ý. Xong có hôm công chúa đi chơi, lúc ấy tớ đang đánh cầu thì được bạn nhỏ gửi ảnh, ôi tớ thích lắm lun í. Thật ra động lực đạp xe của tớ là để khoe cậu đấy Trang ạ, người ta cố lắm, đến nỗi mê đạp xe mê cả cậu lun. Nhớ những hôm lén mẹ call video với Trang thiệt đó, cảm ơn cậu vì đã làm cho mùa hè của tớ thú vị và cute đến vậy, yêu cậu nhất hệ mặt trời lun nhé. ",
+    "Trang nhớ chiều hôm tớ tỏ tình Trang hông, lúc ấy tớ do dự lắm í, tại tui hông có tìn, nhưng mà lúc ấy cậu nhắn tớ cũng hơi chạnh lòng nên là tớ mới quyêt tâm đến vậy á, phải đi mua hoa liền lun, và có kết siu bất ngờ. Xong đến hôm có điểm ielts nữa chớ, ôi chả quên được đâu í. Nhớ lắm hôm trung thu với hôm sinh nhật tớ lun, vợ tớ cho tớ nhìu bất ngờ qué. Trang là động lực để tớ phấn đầu nhiều lắm lun ấy, cô gái chinh phục tôi bằng sự nỗ lực ạ. Cảm ơn những Hải béo, Dương béo đã giúp tớ được gặp cậu, và hơn hết, cảm ơn Trang đã tớ được đồng hành và yêu Trang. Hì hì, tớ chỉ mún nói là đôi lúc tớ cũng buồn, Trang cũng vậy vì mình cũng là con người bình thường mà nhỉ, chỉ mong sao chúng mình hông giấu nhau điều gì(à tui có giấu nhưng mà hông nói đâu nhé hehe), hi vọng chúng mình trong lúc không bình tĩnh không nói những điều làm mình tổn thương nhau ạ. Yêu cậu nhiều, rất nhiều và sẽ luôn yêu cậu, chàng trai tuổi 17 ấy xin được có vé đồng hành với cậu đến 10000 năm ạ." 
+  ],
+  sign:"Anh", 
+  date:"07.11.2026"
+};
+/* ===================================================================== */
+
+const $=id=>document.getElementById(id);
+const mob=innerWidth<768||/Mobi|Android/i.test(navigator.userAgent);
+const rm=matchMedia('(prefers-reduced-motion:reduce)').matches;
+$('it').textContent=CONFIG.title;$('ip').textContent=CONFIG.greeting;$('sm').textContent=SURPRISE;$('mt').textContent=CONFIG.music.title;
+document.title=CONFIG.title;
+
+/* ---- hearts DOM ---- */
+function hearts(x,y,n){const f=$('fx');for(let i=0;i<n;i++){const s=document.createElement('span');s.textContent='♥';s.style.left=(x+(Math.random()-.5)*60)+'px';s.style.top=(y+(Math.random()-.5)*30)+'px';s.style.fontSize=(10+Math.random()*20)+'px';s.style.setProperty('--dx',(Math.random()*80-40)+'px');s.style.animationDelay=(Math.random()*.4)+'s';s.style.color=['#FF4568','#FF8FA8','#FFC6D2'][i%3];f.appendChild(s);setTimeout(()=>s.remove(),4500)}}
+if(!rm)setInterval(()=>hearts(Math.random()*innerWidth,innerHeight,1),1400);
+
+/* ---- counter ---- */
+function tick(){let d=Math.max(0,Date.now()-new Date(CONFIG.start).getTime())/1000;const D=d/86400|0,H=d%86400/3600|0,M=d%3600/60|0,S=d%60|0;$('count').innerHTML=`${CONFIG.names[0]} &amp; ${CONFIG.names[1]} bên nhau<br><b>${D}</b> ngày <b>${H}</b> giờ <b>${M}</b> phút <b>${S}</b> giây`}
+tick();setInterval(tick,1000);
+
+/* ---- music ---- */
+const au=$('au1');au.src=CONFIG.music.src;au.volume=.6;au.loop=true;
+$('pl').onclick=()=>{if(au.paused){au.play().then(()=>$('pl').textContent='❚❚').catch(()=>$('mt').textContent='Chưa có file nhạc')}else{au.pause();$('pl').textContent='▶'}};
+$('vol').oninput=e=>au.volume=+e.target.value;
+
+Promise.race([Promise.all([document.fonts.load('600 60px "Dancing Script"'),document.fonts.load('60px "Cormorant Garamond"'),document.fonts.load('20px "Be Vietnam Pro"')]),new Promise(r=>setTimeout(r,2500))]).catch(()=>{}).then(init);
+
+function init(){
+const cv=$('cv'),R=new THREE.WebGLRenderer({canvas:cv,antialias:false});
+R.setPixelRatio(Math.min(devicePixelRatio,mob?1.5:2));R.setClearColor(0x050308);
+const S=new THREE.Scene(),cam=new THREE.PerspectiveCamera(50,1,.1,400);
+const PX=R.getPixelRatio();
+function size(){R.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}
+addEventListener('resize',size);size();
+
+/* ---- heart particles ---- */
+const N=mob?4500:11000,pos=new Float32Array(N*3),dir=new Float32Array(N*3),col=new Float32Array(N*3),sd=new Float32Array(N);
+const pal=['#FF4568','#FF4568','#FF8FA8','#FF8FA8','#FFC6D2','#FFF5F7'].map(c=>new THREE.Color(c));
+for(let i=0;i<N;i++){const t=Math.random()*Math.PI*2,r=1-Math.pow(Math.random(),2)*.9;
+ const x=16*Math.pow(Math.sin(t),3)*r,y=(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*r,z=(Math.random()+Math.random()-1)*7*(1-Math.abs(x)/20);
+ pos.set([x*.2,(y-2.5)*.2,z*.2],i*3);
+ const a=Math.random()*6.283,b=Math.acos(Math.random()*2-1),l=6+Math.random()*16;dir.set([Math.sin(b)*Math.cos(a)*l,Math.sin(b)*Math.sin(a)*l,Math.cos(b)*l],i*3);
+ const c=pal[Math.random()*pal.length|0];col.set([c.r,c.g,c.b],i*3);sd[i]=Math.random()}
+const hg=new THREE.BufferGeometry();
+hg.setAttribute('position',new THREE.BufferAttribute(pos,3));hg.setAttribute('aDir',new THREE.BufferAttribute(dir,3));hg.setAttribute('aCol',new THREE.BufferAttribute(col,3));hg.setAttribute('aSeed',new THREE.BufferAttribute(sd,1));
+const HU={uT:{value:0},uBeat:{value:1},uEx:{value:0},uG:{value:0},uPx:{value:PX},uMot:{value:rm?.15:1}};
+const heart=new THREE.Points(hg,new THREE.ShaderMaterial({uniforms:HU,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+vertexShader:`attribute vec3 aDir;attribute vec3 aCol;attribute float aSeed;uniform float uT,uBeat,uEx,uG,uPx,uMot;varying vec3 vC;
+void main(){vec3 p=position;float s=aSeed*40.;
+p+=normalize(p+.001)*sin(uT*.8+s)*.07*uMot+vec3(sin(uT+s),cos(uT*.9+s*1.3),sin(uT*1.1+s*.7))*.05*uMot;
+float away=step(.94,fract(aSeed*7.3));p+=away*normalize(p+.001)*(sin(uT*.6+s*1.5)*.5+.5)*.9*uMot;
+p*=uBeat*(1.-.88*uG);p+=aDir*uEx;vec4 mv=modelViewMatrix*vec4(p,1.);
+gl_PointSize=uPx*(1.+aSeed*1.6)*(30./-mv.z);gl_Position=projectionMatrix*mv;vC=aCol;}`,
+fragmentShader:`varying vec3 vC;void main(){float d=length(gl_PointCoord-.5);if(d>.5)discard;float a=smoothstep(.5,0.,d);gl_FragColor=vec4(vC*(.6+a),a*.85);}`}));
+const root=new THREE.Group();root.add(heart);S.add(root);
+
+/* glow */
+const gc=document.createElement('canvas');gc.width=gc.height=128;const g=gc.getContext('2d'),gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,69,104,.9)');gr.addColorStop(1,'rgba(255,69,104,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);
+const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(gc),blending:THREE.AdditiveBlending,transparent:true,opacity:.28,depthWrite:false}));glow.scale.set(14,14,1);S.add(glow);
+
+/* ---- stars, dust ---- */
+function field(n,rMin,rMax,color,sz){const p=new Float32Array(n*3),a=new Float32Array(n);for(let i=0;i<n;i++){const u=Math.random()*6.283,v=Math.acos(Math.random()*2-1),r=rMin+Math.random()*(rMax-rMin);p.set([r*Math.sin(v)*Math.cos(u),r*Math.sin(v)*Math.sin(u),r*Math.cos(v)],i*3);a[i]=Math.random()}
+ const gm=new THREE.BufferGeometry();gm.setAttribute('position',new THREE.BufferAttribute(p,3));gm.setAttribute('aS',new THREE.BufferAttribute(a,1));
+ const m=new THREE.ShaderMaterial({uniforms:{uT:HU.uT,uPx:{value:PX},uC:{value:new THREE.Color(color)},uSz:{value:sz}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+ vertexShader:`attribute float aS;uniform float uT,uPx,uSz;varying float vA;void main(){vA=.5+.5*sin(uT*(1.+aS)*1.5+aS*90.);gl_PointSize=uPx*uSz*(.7+aS*1.6)*(.6+.4*vA);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+ fragmentShader:`uniform vec3 uC;varying float vA;void main(){float d=length(gl_PointCoord-.5);if(d>.5)discard;gl_FragColor=vec4(uC,smoothstep(.5,0.,d)*(.4+.6*vA));}`});
+ return new THREE.Points(gm,m)}
+const stars=field(mob?1500:3200,90,220,'#FFF5F7',2.2);S.add(stars);
+const dust=[field(mob?120:260,12,45,'#FF8FA8',4),field(mob?60:140,18,55,'#FFC6D2',3.5),field(30,10,30,'#FFF5F7',5)];dust.forEach(d=>S.add(d));
+
+/* ---- polaroids ---- */
+const polys=[],ringDefs=[{R:6.5,tilt:.18,sp:.12},{R:8,tilt:-.14,sp:-.09},{R:9.5,tilt:.08,sp:.07}],rg=ringDefs.map(d=>{const gp=new THREE.Group();gp.rotation.z=d.tilt;root.add(gp);return gp});
+const W=3,H=3.62;
+MEMORIES.forEach((m,i)=>{const cvp=document.createElement('canvas');cvp.width=384;cvp.height=464;const x=cvp.getContext('2d');
+ function frame(img){x.fillStyle='#FFF5F7';x.fillRect(0,0,384,464);
+  if(img){const s=Math.max(344/img.width,344/img.height),w=img.width*s,h=img.height*s;x.save();x.beginPath();x.rect(20,20,344,344);x.clip();x.drawImage(img,20+(344-w)/2,20+(344-h)/2,w,h);x.restore()}
+  else{const gg=x.createLinearGradient(20,20,364,364);gg.addColorStop(0,'#FF8FA8');gg.addColorStop(1,'#FF4568');x.fillStyle=gg;x.fillRect(20,20,344,344);x.fillStyle='rgba(255,245,247,.85)';x.font='120px serif';x.textAlign='center';x.fillText('♥',192,225);x.font='22px "Be Vietnam Pro",sans-serif';x.fillText('Thêm ảnh của hai đứa',192,275)}
+  x.fillStyle='#5a3a40';x.textAlign='center';x.font='600 34px "Dancing Script",cursive';x.fillText(m.caption,192,410,340);x.fillStyle='#b86b7e';x.font='20px "Be Vietnam Pro",sans-serif';x.fillText(m.date||'',192,444)}
+ frame(null);const tex=new THREE.CanvasTexture(cvp);tex.anisotropy=4;
+ const mesh=new THREE.Mesh(new THREE.PlaneGeometry(W,H),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
+ const k=i%3,a=(i/MEMORIES.length)*6.283+k;mesh.userData={m,k,a,ph:Math.random()*6,s:1,ts:1,tilt:(Math.random()-.5)*.35,img:null,cv:cvp};
+ const im=new Image();im.onload=()=>{mesh.userData.img=im;frame(im);tex.needsUpdate=true};im.src=m.file;
+ rg[k].add(mesh);polys.push(mesh)}); 
+
+/* ---- orbit text rings ---- */
+const txR=[{R:11.5,y:7.5,sp:.06,t:.1},{R:13,y:-7.5,sp:-.05,t:-.12},{R:17,y:0,sp:.035,t:.22}],txs=[];
+txR.forEach((d,i)=>{const msgs=MESSAGES[i%MESSAGES.length],TW=4096,TH=Math.max(96,Math.round(TW*1.8/(6.283*d.R)));
+ const c=document.createElement('canvas');c.width=TW;c.height=TH;const x=c.getContext('2d'),fs=TH*.6;x.font=`600 ${fs}px "Dancing Script",cursive`;
+ const unit=msgs.join('   ✦   ')+'   ✦   ',w=x.measureText(unit).width,n=Math.max(1,Math.round(TW/w)),sx=TW/(n*w);
+ x.scale(sx,1);x.fillStyle=i==2?'#FF8FA8':(i?'#FFC6D2':'#FFF5F7');x.shadowColor='#FF4568';x.shadowBlur=14;x.textBaseline='middle';
+ for(let j=0;j<n;j++)x.fillText(unit,j*w,TH/2);
+ const mesh=new THREE.Mesh(new THREE.CylinderGeometry(d.R,d.R,1.8,96,1,true),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,opacity:.92,depthWrite:false}));
+ const gp=new THREE.Group();gp.position.y=d.y;gp.rotation.z=d.t;gp.add(mesh);root.add(gp);txs.push({mesh,sp:d.sp})});
+
+/* ---- state & controls ---- */
+const st={zoom:1,auto:!rm,speed:.25,beat:0,ex:-1,gat:0,gatT:0,intro:0};
+const tgt={x:.15,y:0,z:0};let drag=null,ptrs=new Map(),pd=0,pa=0,mx=0,my=0;
+const ray=new THREE.Raycaster(),nd=new THREE.Vector2();let hov=null;
+function pick(cx,cy){nd.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.setFromCamera(nd,cam);const h=ray.intersectObjects(polys);return h.length?h[0].object:null}
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,[e.clientX,e.clientY]);drag={x:e.clientX,y:e.clientY,t:performance.now(),moved:0,sh:e.shiftKey||e.button==2};if(ptrs.size==2){const p=[...ptrs.values()];pd=Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]);pa=Math.atan2(p[1][1]-p[0][1],p[1][0]-p[0][0])}});
+cv.addEventListener('pointermove',e=>{mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5;
+ if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+ if(ptrs.size==2){const p=[...ptrs.values()],d=Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1]),a=Math.atan2(p[1][1]-p[0][1],p[1][0]-p[0][0]);setZoom(st.zoom*d/pd);tgt.z+=a-pa;pd=d;pa=a;if(drag)drag.moved=99;return}
+ if(drag&&ptrs.size==1){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;drag.moved+=Math.abs(dx)+Math.abs(dy);
+  if(drag.sh||e.shiftKey)tgt.z+=dx*.006;else{tgt.y+=dx*.006;tgt.x=Math.max(-1.4,Math.min(1.4,tgt.x+dy*.006))}}
+ else if(e.pointerType=='mouse'){hov=pick(e.clientX,e.clientY);cv.style.cursor=hov?'pointer':''}});
+cv.addEventListener('pointerup',e=>{ptrs.delete(e.pointerId);if(drag&&drag.moved<6&&performance.now()-drag.t<400&&ptrs.size==0){const p=pick(e.clientX,e.clientY);if(p)openLb(p.userData);else{hearts(e.clientX,e.clientY,8);}}if(!ptrs.size)drag=null});
+cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);drag=null});
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('dblclick',()=>{st.beat=1});
+cv.addEventListener('wheel',e=>{e.preventDefault();setZoom(st.zoom*(e.deltaY<0?1.08:.92))},{passive:false});
+function setZoom(z){st.zoom=Math.max(.5,Math.min(2.5,z));$('zm').value=st.zoom}
+$('zm').oninput=e=>st.zoom=+e.target.value;$('sp').oninput=e=>st.speed=+e.target.value;
+function setAuto(v){st.auto=v;$('au').textContent='Tự xoay: '+(v?'bật':'tắt')}$('au').onclick=()=>setAuto(!st.auto);setAuto(st.auto);
+$('rs').onclick=()=>{tgt.x=.15;tgt.y=Math.round(root.rotation.y/6.283)*6.283;tgt.z=0;setZoom(1)};
+function boom(){st.ex=0;st.t0=performance.now()}$('bx').onclick=boom;
+
+/* lightbox */
+function openLb(u){const l=$('lb');$('li').src=u.img?u.m.file:u.cv.toDataURL();$('lcap').textContent=u.m.caption;$('ld').textContent=u.m.date||'';l.classList.add('on')}
+$('lb').onclick=()=>$('lb').classList.remove('on');
+
+/* intro */
+$('go').onclick=()=>{au.play().then(()=>$('pl').textContent='❚❚').catch(()=>{});$('intro').classList.add('hide');st.intro=performance.now();setTimeout(()=>$('intro').remove(),1300);boom()};  
+
+/* surprise */
+$('bs').onclick=()=>{st.gat=1;$('sur').classList.add('on');setTimeout(()=>{$('sur').classList.add('show');st.beat=1;boom()},2200)};
+$('sc').onclick=()=>{st.gat=0;$('sur').classList.remove('on','show');boom()};
+
+/* letter */
+const pp=$('pp');pp.innerHTML=`<h2>${LETTER.title}</h2>`+LETTER.lines.map(l=>`<p>${l}</p>`).join('')+`<p class="sg">${LETTER.sign}</p><small>${LETTER.date}</small>`;
+$('bl').onclick=()=>{$('lt').classList.add('on')};
+$('env').onclick=()=>{const e=$('env');if(e.classList.contains('open'))return;e.classList.add('open');$('lh').style.display='none';hearts(innerWidth/2,innerHeight/2,18);
+ setTimeout(()=>{e.classList.add('gone');pp.classList.add('show');[...pp.querySelectorAll('p')].forEach((p,i)=>setTimeout(()=>p.classList.add('v'),900+i*900));setTimeout(()=>hearts(innerWidth/2,innerHeight*.7,14),900)},900)};
+$('lc').onclick=()=>{$('lt').classList.remove('on');setTimeout(()=>{$('env').classList.remove('open','gone');pp.classList.remove('show');pp.querySelectorAll('p').forEach(p=>p.classList.remove('v'));$('lh').style.display=''},1200)};
+addEventListener('keydown',e=>{if(e.key=='Escape'){$('lb').classList.remove('on');if($('lt').classList.contains('on'))$('lc').click()}});
+
+/* loop */
+const clk=new THREE.Clock(),tmp=new THREE.Vector3();let low=0,fAcc=0,fN=0;
+function frame(){requestAnimationFrame(frame);const dt=Math.min(clk.getDelta(),.05),t=clk.elapsedTime;
+ /* adaptive: drop pixel ratio if FPS is poor */
+ fAcc+=dt;fN++;if(fAcc>2){if(fN/fAcc<40&&R.getPixelRatio()>1){R.setPixelRatio(1);size()}fAcc=0;fN=0}
+ HU.uT.value=t;const ph=t%1.15,pulse=Math.exp(-Math.pow((ph-.12)*9,2))+.6*Math.exp(-Math.pow((ph-.38)*10,2));
+ st.beat=Math.max(0,st.beat-dt*.9);HU.uBeat.value=1+.035*pulse+st.beat*.22*Math.abs(Math.sin(t*12));
+ if(st.ex>=0){const p=(performance.now()-st.t0)/4200;if(p>=1){st.ex=-1;HU.uEx.value=0}else HU.uEx.value=p<.18?Math.pow(p/.18,.5):Math.pow(1-(p-.18)/.82,2)}
+ st.gatT+=(st.gat-st.gatT)*Math.min(1,dt*1.6);HU.uG.value=st.gatT;
+ if(st.auto&&!drag)tgt.y+=st.speed*dt*.5;
+ root.rotation.x+=(tgt.x-root.rotation.x)*.1;root.rotation.y+=(tgt.y-root.rotation.y)*.1;root.rotation.z+=(tgt.z-root.rotation.z)*.1;
+ const m=rm?0:1;ringDefs.forEach((d,i)=>rg[i].rotation.y+=d.sp*dt*m*(1+st.speed));txs.forEach(o=>o.mesh.rotation.y+=o.sp*dt*m);
+ stars.rotation.y+=.004*dt*m;dust.forEach((d,i)=>{d.rotation.y+=(.02+i*.015)*dt*m;d.rotation.x+=(.01*(i-1))*dt*m});
+ const it=st.intro?Math.min(1,(performance.now()-st.intro)/3200):0,ease=1-Math.pow(1-it,3),zz=(st.intro?60-(60-26)*ease:60)/st.zoom;
+ cam.position.x+=(mx*3-cam.position.x)*.04;cam.position.y+=(-my*2-cam.position.y)*.04;cam.position.z+=(zz-cam.position.z)*.12;cam.lookAt(0,0,0);
+ const s=HU.uBeat.value*(1-.88*st.gatT);glow.scale.setScalar(12+pulse*2+st.beat*6);glow.material.opacity=.22+.1*pulse+(st.gatT*.3);
+ polys.forEach((p,i)=>{const u=p.userData,R_=ringDefs[u.k].R;const a=u.a;p.position.set(Math.cos(a)*R_,Math.sin(t*.5+u.ph)*.5+(u.k-1)*1.8+Math.sin(a*2)*.8,Math.sin(a)*R_);
+  p.getWorldPosition(tmp);p.lookAt(cam.position);p.rotateZ(u.tilt);
+  u.ts=(p===hov)?1.4:1;u.s+=(u.ts-u.s)*.12;p.scale.setScalar(u.s*(1-.9*st.gatT));const b=p===hov?1.35:1;p.material.color.setScalar(b)});
+ R.render(S,cam)}
+frame();
+}
+</script>
+</body>
+</html>
