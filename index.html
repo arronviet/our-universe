@@ -60,6 +60,20 @@ input[type=range]{accent-color:var(--red)}
 @keyframes fl{from{transform:translateY(0) scale(.6);opacity:1}to{transform:translateY(-55vh) scale(1.3) translateX(var(--dx));opacity:0}}
 @media(max-width:600px){#ctl input{width:70px}#music input{display:none}}
 @media(prefers-reduced-motion:reduce){#fx span{animation-duration:.01s}}
+#dr{position:fixed;inset:0;z-index:17;background:rgba(5,3,8,.9);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .6s}
+#dr.on{opacity:1;pointer-events:auto}
+.dbox{width:min(96vw,720px);max-height:88vh;overflow:auto;border:1px solid rgba(255,198,210,.25);border-radius:14px;padding:20px;background:rgba(20,8,16,.85);display:grid;gap:18px;grid-template-columns:1fr}
+@media(min-width:700px){.dbox{grid-template-columns:1fr 1fr}}
+.dh{display:flex;align-items:center;justify-content:space-between;font-family:'Cormorant Garamond',serif;font-size:1.4rem;margin-bottom:8px}
+.dg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:.8rem}
+.dg b{color:var(--pink);font-weight:400}
+.dg button{position:relative;padding:.6em 0 .9em;border-radius:8px;border-color:transparent}
+.dg button.sel{border-color:var(--pink);background:rgba(255,69,104,.2)}
+.dg button.td{color:var(--red)}
+.dg button i{position:absolute;bottom:1px;left:50%;transform:translateX(-50%);font-style:normal;font-size:.6rem;line-height:1;white-space:nowrap}
+.dl{font-size:.9rem}
+.dl .it{border-left:2px solid var(--pink);padding:4px 8px;margin:6px 0;display:flex;gap:8px;justify-content:space-between;align-items:flex-start}
+.dl textarea,.dl select{width:100%;background:#120a10;color:var(--w);border:1px solid rgba(255,198,210,.3);border-radius:8px;padding:8px;font:inherit;margin:4px 0}
 </style>
 </head>
 <body>
@@ -73,7 +87,7 @@ input[type=range]{accent-color:var(--red)}
     <label>Tốc độ <input id="sp" type="range" min="0" max="1.2" step=".05" value=".25"></label>
     <label>Phóng to <input id="zm" type="range" min=".5" max="2.5" step=".05" value="1"></label>
   </div>
-  <div id="nav"><button id="bl">Lá thư</button><button id="bx">Bung nở</button><button id="bs">Một điều bất ngờ dành cho em</button></div>
+  <div id="nav"><button id="bl">Lá thư</button><button id="bd">Nhật ký</button><button id="bx">Bung nở</button><button id="bs">Một điều bất ngờ dành cho em</button></div>
 </div>
 <div id="intro"><h1 id="it"></h1><p id="ip"></p><button id="go">Bước vào thế giới của chúng mình</button></div>
 <div id="sur"><p id="sm"></p><button id="sc">Quay về với vũ trụ</button></div>
@@ -81,6 +95,7 @@ input[type=range]{accent-color:var(--red)}
   <div class="env" id="env"><div class="flap"></div><i></i><span>♥</span></div><div class="hint" id="lh">Chạm vào phong bì để mở</div>
   <div class="paper" id="pp"></div></div>
 <div id="lb"><img id="li" alt=""><p id="lcap"></p><small id="ld"></small></div>
+<div id="dr"><button class="x" id="dx">Đóng</button><div class="dbox"><div><div class="dh"><button id="dp">‹</button><span id="dm"></span><button id="dn">›</button></div><div class="dg" id="dg"></div><p style="font-size:.75rem;color:var(--lp)">😊 vui · 😢 buồn · 🎉 sự kiện · 💗 đặc biệt</p></div><div class="dl" id="dl"></div></div></div>
 <audio id="au1" preload="none"></audio>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -148,6 +163,37 @@ const au=$('au1');au.src=CONFIG.music.src;au.volume=.6;au.loop=true;
 $('pl').onclick=()=>{if(au.paused){au.play().then(()=>$('pl').textContent='❚❚').catch(()=>$('mt').textContent='Chưa có file nhạc')}else{au.pause();$('pl').textContent='▶'}};
 $('vol').oninput=e=>au.volume=+e.target.value;
 
+/* ---- NHẬT KÝ ---- */
+const DIARY=[ // nhật ký cố định: ai mở trang cũng thấy. mood: vui | buon | sukien | dacbiet
+  {date:"2026-07-29",mood:"dacbiet",text:"Ngày mình bắt đầu yêu nhau"}
+];
+(()=>{
+const ic={vui:'😊',buon:'😢',sukien:'🎉',dacbiet:'💗'},KEY='ourUniverseDiary';
+let mine=[];try{mine=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(mine))}catch(e){}};
+const now=new Date();let y=now.getFullYear(),m=now.getMonth(),sel=null;
+const pad=n=>String(n).padStart(2,'0'),key=(Y,M,D)=>`${Y}-${pad(M+1)}-${pad(D)}`;
+const all=k=>[...DIARY.filter(e=>e.date==k).map(e=>({...e,fixed:1})),...mine.map((e,i)=>({...e,i})).filter(e=>e.date==k)];
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function detail(){const box=$('dl');if(!sel){box.innerHTML='<p>Chọn một ngày để xem hoặc ghi lại.</p>';return}
+ const [a,b,c]=sel.split('-');
+ box.innerHTML=`<p class="ser" style="font-size:1.2rem;margin:0">${+c}/${+b}/${a}</p>`+all(sel).map(e=>`<div class="it"><span>${ic[e.mood]||'💗'} ${esc(e.text)}</span>${e.fixed?'':`<button data-del="${e.i}">Xóa</button>`}</div>`).join('')+
+ `<select id="dmo"><option value="vui">😊 Vui</option><option value="buon">😢 Buồn</option><option value="sukien">🎉 Sự kiện</option><option value="dacbiet">💗 Đặc biệt</option></select><textarea id="dtx" rows="3" placeholder="Hôm đó có chuyện gì..."></textarea><button id="dad">Lưu</button>`}
+function draw(){$('dm').textContent=`Tháng ${m+1}/${y}`;
+ const first=(new Date(y,m,1).getDay()+6)%7,days=new Date(y,m+1,0).getDate(),tk=key(now.getFullYear(),now.getMonth(),now.getDate());
+ let h=['T2','T3','T4','T5','T6','T7','CN'].map(d=>`<b>${d}</b>`).join('')+'<span></span>'.repeat(first);
+ for(let d=1;d<=days;d++){const k=key(y,m,d),es=all(k);
+  h+=`<button data-k="${k}" class="${k==sel?'sel':''} ${k==tk?'td':''}">${d}${es.length?`<i>${[...new Set(es.map(e=>ic[e.mood]||'💗'))].join('')}</i>`:''}</button>`}
+ $('dg').innerHTML=h;detail()}
+$('dg').onclick=e=>{const b=e.target.closest('button[data-k]');if(b){sel=b.dataset.k;draw()}};
+$('dl').onclick=e=>{const t=e.target;
+ if(t.dataset.del!==undefined){mine.splice(+t.dataset.del,1);save();draw()}
+ if(t.id=='dad'){const tx=$('dtx').value.trim();if(!tx)return;mine.push({date:sel,mood:$('dmo').value,text:tx});save();draw()}};
+$('dp').onclick=()=>{m--;if(m<0){m=11;y--}draw()};
+$('dn').onclick=()=>{m++;if(m>11){m=0;y++}draw()};
+$('bd').onclick=()=>{sel=sel||key(now.getFullYear(),now.getMonth(),now.getDate());draw();$('dr').classList.add('on')};
+$('dx').onclick=()=>$('dr').classList.remove('on'); 
+})();
 Promise.race([Promise.all([document.fonts.load('600 60px "Dancing Script"'),document.fonts.load('60px "Cormorant Garamond"'),document.fonts.load('20px "Be Vietnam Pro"')]),new Promise(r=>setTimeout(r,2500))]).catch(()=>{}).then(init);
 
 function init(){
@@ -249,7 +295,7 @@ $('go').onclick=()=>{au.play().then(()=>$('pl').textContent='❚❚').catch(()=>
 
 /* surprise */
 $('bs').onclick=()=>{st.gat=1;$('sur').classList.add('on');setTimeout(()=>{$('sur').classList.add('show');st.beat=1;boom()},2200)};
-$('sc').onclick=()=>{st.gat=0;$('sur').classList.remove('on','show');boom()};
+$('sc').onclick=()=>{st.gat=0;$('sur').classList.remove('on','show');boom()};  
 
 /* letter */
 const pp=$('pp');pp.innerHTML=`<h2>${LETTER.title}</h2>`+LETTER.lines.map(l=>`<p>${l}</p>`).join('')+`<p class="sg">${LETTER.sign}</p><small>${LETTER.date}</small>`;
