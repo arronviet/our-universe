@@ -214,7 +214,7 @@ function setBloom(v){
  if(v&&!comp){
   if(!THREE.EffectComposer||!THREE.UnrealBloomPass){$('bb').textContent='Bloom: lỗi tải';return}
   comp=new THREE.EffectComposer(R);comp.addPass(new THREE.RenderPass(S,cam));
-  comp.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.8,.55,.6));size()}
+  comp.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.5,.65,.75));size()}
  bloomOn=v;$('bb').textContent='Bloom: '+(v?'bật':'tắt')}
 $('bb').onclick=()=>setBloom(!bloomOn);
 setBloom(!mob&&!rm);
